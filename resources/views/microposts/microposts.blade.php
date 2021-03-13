@@ -16,6 +16,7 @@
                     </div>
 
                     <div style="display: flex">
+                        {!! $micropost->id !!}
                         @if (Auth::user()->is_favorite($micropost->id))
                             {!! Form::open(['route' => ['favorites.unfavorite', $micropost->id], 'method' => 'delete']) !!}
                                 {!! Form::submit('Unfavorite', ['class' => 'btn btn-success btn-sm']) !!}
