@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+
 class User extends Authenticatable
 {
     use Notifiable;
@@ -124,7 +125,8 @@ class User extends Authenticatable
      */
     public function loadRelationshipCounts()
     {
-        $this->loadCount('microposts');
+        $this->loadCount(['microposts', 'followings', 'followers', 'favorites']);
+
     }
 
     /**
@@ -139,5 +141,66 @@ class User extends Authenticatable
         // それらのユーザが所有する投稿に絞り込む
         return Micropost::whereIn('user_id', $userIds);
     }
+    
+    public function favorites()
+    {
+        return $this->belongsToMany(User::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
+
+    }
+
+
+    public function is_favorite($micropostId)
+    {
+        // フォロー中ユーザの中に $userIdのものが存在するか
+        return $this->favorites()->where('micropost_id', $micropostId)->exists();
+        
+        
+    }
+    
+    /**
+     *
+     * @param  int  $userId
+     * @return bool
+     */
+    public function favorite($micropostId)
+    {
+        // すでにフォローしているかの確認
+        $exist = $this->is_favorite($micropostId);
+        // 対象が自分自身かどうかの確認
+        $its_me = $this->id == $micropostId;
+
+        if ($exist) {
+            // すでにフォローしていれば何もしない
+            return false;
+        } else {
+            // 未フォローであればフォローする
+            $this->favorites()->attach($micropostId);
+            return true;
+        }
+    }
+
+    /**
+     * 
+     *
+     * @param  int  $userId
+     * @return bool
+     */
+    public function unfavorite($micropostId)
+    {
+        // すでにフォローしているかの確認
+        $exist = $this->is_favorite($micropostId);
+        // 対象が自分自身かどうかの確認
+        $its_me = $this->id == $micropostId;
+        
+        if ($exist && !$its_me) {
+            // すでにフォローしていればフォローを外す
+            $this->favorites()->detach($micropostId);
+            return true;
+        } else {
+            // 未フォローであれば何もしない
+            return false;
+        }
+    }
+    
     
 }
